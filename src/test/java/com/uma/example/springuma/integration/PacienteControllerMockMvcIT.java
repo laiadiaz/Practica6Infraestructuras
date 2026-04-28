@@ -78,8 +78,60 @@ public class PacienteControllerMockMvcIT extends AbstractIntegration {
         crearMedico(medico);
         crearPaciente(paciente);
 
-        //Obtener paciente por ID
-        
+        mockMvc.perform(get("/paciente/" + paciente.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.nombre").value("Maria"))
+                .andExpect(jsonPath("$.dni").value("888"));
     }
 
+    @Test
+    @DisplayName("Asociar paciente a médico y recuperar lista de pacientes del médico")
+    void asociarPacienteAMedico_ListaPacientesDelMedico() throws Exception {
+        crearMedico(medico);
+        crearPaciente(paciente);
+
+        mockMvc.perform(get("/paciente/medico/" + medico.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nombre").value("Maria"));
+    }
+
+    @Test
+    @DisplayName("Actualizar datos de un paciente")
+    void actualizarPaciente_CambiaNombre() throws Exception {
+        crearMedico(medico);
+        crearPaciente(paciente);
+
+        paciente.setNombre("Ana");
+        mockMvc.perform(put("/paciente")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(paciente)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/paciente/" + paciente.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Ana"));
+    }
+
+    @Test
+    @DisplayName("Eliminar un paciente")
+    void eliminarPaciente_DevuelveOk() throws Exception {
+        crearMedico(medico);
+        crearPaciente(paciente);
+
+        mockMvc.perform(delete("/paciente/" + paciente.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Médico sin pacientes devuelve lista vacía")
+    void medicoSinPacientes_DevuelveListaVacia() throws Exception {
+        crearMedico(medico);
+
+        mockMvc.perform(get("/paciente/medico/" + medico.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
 }

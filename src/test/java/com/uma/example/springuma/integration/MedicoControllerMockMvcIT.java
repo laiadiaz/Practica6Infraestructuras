@@ -40,4 +40,60 @@ public class MedicoControllerMockMvcIT extends AbstractIntegration {
                 .andExpect(status().isCreated());
     }
 
+    
+    @Test
+    @DisplayName("Crear un médico y recuperarlo por ID")
+    void crearMedico_RecuperaPorId() throws Exception {
+        crearMedico(medico);
+
+        mockMvc.perform(get("/medico/" + medico.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.nombre").value("Miguel"))
+                .andExpect(jsonPath("$.especialidad").value("Ginecologia"));
+    }
+
+    @Test
+    @DisplayName("Crear un médico y recuperarlo por DNI")
+    void crearMedico_RecuperaPorDni() throws Exception {
+        crearMedico(medico);
+
+        mockMvc.perform(get("/medico/dni/" + medico.getDni()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.dni").value("835"));
+    }
+
+    @Test
+    @DisplayName("Actualizar un médico existente")
+    void actualizarMedico_CambiaEspecialidad() throws Exception {
+        crearMedico(medico);
+
+        medico.setEspecialidad("Radiologia");
+
+        mockMvc.perform(put("/medico")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(medico)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/medico/" + medico.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.especialidad").value("Radiologia"));
+    }
+
+    @Test
+    @DisplayName("Eliminar un médico existente")
+    void eliminarMedico_DevuelveOk() throws Exception {
+        crearMedico(medico);
+
+        mockMvc.perform(delete("/medico/" + medico.getId()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Buscar médico por DNI inexistente devuelve 404")
+    void buscarMedicoDniInexistente_DevuelveNotFound() throws Exception {
+        mockMvc.perform(get("/medico/dni/DNI_NO_EXISTE"))
+                .andExpect(status().isNotFound());
+    }
 }

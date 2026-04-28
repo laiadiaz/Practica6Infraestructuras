@@ -90,4 +90,73 @@ public class ImagenControllerWebTestClientIT extends AbstractIntegration {
         }
     }
 
-   }
+    @Test
+    @DisplayName("Subir imagen healthy y verificar que se sube correctamente")
+    void subirImagen_Healthy_DevuelveOk() {
+        subirImagen("healthy.png");
+    }
+
+    @Test
+    @DisplayName("Subir imagen y recuperar sus metadatos por ID")
+    void subirImagen_RecuperaInfoPorId() {
+        subirImagen("healthy.png");
+
+        testClient.get().uri("/imagen/info/1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(1)
+                .jsonPath("$.nombre").isEqualTo("healthy.png");
+    }
+
+    @Test
+    @DisplayName("Subir imagen y descargarla como bytes PNG")
+    void subirImagen_DescargaImagen() {
+        subirImagen("healthy.png");
+
+        testClient.get().uri("/imagen/1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.IMAGE_PNG);
+    }
+
+    @Test
+    @DisplayName("Obtener lista de imágenes de un paciente")
+    void subirImagen_ListaImagenesPaciente() {
+        subirImagen("healthy.png");
+
+        testClient.get().uri("/imagen/paciente/" + paciente.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Realizar predicción sobre imagen subida — devuelve resultado aleatorio")
+    void subirImagen_RealizaPrediccion() {
+        subirImagen("healthy.png");
+
+        String resultado = testClient.get().uri("/imagen/predict/1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertTrue(resultado != null && !resultado.isEmpty(),
+                "La predicción debe devolver un resultado no vacío");
+        assertTrue(resultado.contains("Not cancer") || resultado.contains("Cancer"),
+                "La predicción debe indicar 'Not cancer' o 'Cancer'");
+    }
+
+    @Test
+    @DisplayName("Eliminar imagen subida")
+    void subirImagen_EliminaImagen() {
+        subirImagen("healthy.png");
+
+        testClient.delete().uri("/imagen/1")
+                .exchange()
+                .expectStatus().isNoContent();
+    }
+}

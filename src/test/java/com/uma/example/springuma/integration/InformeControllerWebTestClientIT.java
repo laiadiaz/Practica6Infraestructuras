@@ -90,4 +90,78 @@ public class InformeControllerWebTestClientIT extends AbstractIntegration {
                 .expectStatus().isOk();
 
     }
+
+    private void crearInforme(String prediccion, String contenido) {
+        informe = new Informe();
+        informe.setPrediccion(prediccion);
+        informe.setContenido(contenido);
+        informe.setImagen(imagen);
+
+        testClient.post().uri("/informe")
+                .body(Mono.just(informe), Informe.class)
+                .exchange()
+                .expectStatus().isCreated();
+    }
+
+    @Test
+    @DisplayName("Crear informe asociado a una imagen y recuperarlo por ID")
+    void crearInforme_RecuperaPorId() {
+        crearInforme("Not cancer", "Imagen sin indicios de cancer");
+
+        testClient.get().uri("/informe/1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.prediccion").isEqualTo("Not cancer")
+                .jsonPath("$.contenido").isEqualTo("Imagen sin indicios de cancer");
+    }
+
+    @Test
+    @DisplayName("Obtener lista de informes asociados a una imagen")
+    void crearInforme_ListaInformesDeImagen() {
+        crearInforme("Not cancer", "Informe inicial");
+
+        testClient.get().uri("/informe/imagen/" + imagen.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(1)
+                .jsonPath("$[0].contenido").isEqualTo("Informe inicial");
+    }
+
+    @Test
+    @DisplayName("Eliminar un informe")
+    void eliminarInforme_DevuelveNoContent() {
+        crearInforme("Cancer", "Imagen con probabilidad de cancer alta");
+
+        testClient.delete().uri("/informe/1")
+                .exchange()
+                .expectStatus().isNoContent();
+    }
+
+    @Test
+    @DisplayName("Camino largo: crear médico, paciente, subir imagen, predecir y guardar informe")
+    void caminoCompleto_MedicoPacienteImagenPrediccionInforme() {
+        // La predicción
+        String prediccion = testClient.get().uri("/imagen/predict/1")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertTrue(prediccion != null && (prediccion.contains("Not cancer") || prediccion.contains("Cancer")),
+                "La predicción debe devolver estado válido");
+
+        // Guardar el informe con el resultado de la predicción
+        crearInforme(prediccion, "Informe generado desde predicción automática");
+
+        // Verificar que el informe se puede recuperar
+        testClient.get().uri("/informe/imagen/" + imagen.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(1);
+    }
+
 }
