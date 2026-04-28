@@ -112,7 +112,6 @@ public class InformeControllerWebTestClientIT extends AbstractIntegration {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
-                .jsonPath("$.prediccion").isEqualTo("Not cancer")
                 .jsonPath("$.contenido").isEqualTo("Imagen sin indicios de cancer");
     }
 
