@@ -37,10 +37,12 @@ jobs:
 
       # Publicar informe de resultados de tests
       - name: Publish test report
-        uses: ctrf-io/github-test-reporter@v1
-        with:
-          report-path: 'target/surefire-reports/*.xml'
+        uses: dorny/test-reporter@v1
         if: always()
+        with:
+          name: Integration Tests
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
 
       # Generar badge de cobertura 
       - name: Generate JaCoCo badge
